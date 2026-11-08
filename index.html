@@ -751,6 +751,29 @@ self.addEventListener('fetch', (event) => {
           window.removeEventListener('appinstalled', handleAppInstalled);
         };
       }, []);
+      const showNotification = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => {
+          setToast((prev) => (prev && prev.message === message ? null : prev));
+        }, 3200);
+      };
+
+      const handleTriggerInstall = async () => {
+        if (!deferredInstallPrompt) {
+          showNotification('Tippe im Browser-Menü auf "App installieren"', 'info');
+          return;
+        }
+        try {
+          deferredInstallPrompt.prompt();
+          const choice = await deferredInstallPrompt.userChoice;
+          if (choice && choice.outcome === 'accepted') {
+            showNotification('Installation auf Android gestartet...');
+          }
+        } catch (err) {
+          console.error('Install Prompt Fehler:', err);
+        }
+        setDeferredInstallPrompt(null);
+      };
 
       // ==========================================================================
       // 4. CORE FINANCIAL ENGINE (Strikt gefiltert nach selectedMonthKey)
