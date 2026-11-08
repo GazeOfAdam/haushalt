@@ -1,22 +1,26 @@
-/* FlowPilot Partner A - Progressive Web App Service Worker */
-const CACHE_NAME = 'flowpilot-pixel-cache-v1';
+const CACHE_NAME = 'flowpilot-v1';
+
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap',
-  'https://unpkg.com/react@18/umd/react.production.min.js',
-  'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
-  'https://unpkg.com/@babel/standalone/babel.min.js'
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Pre-caching core components for offline use...');
-      return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(async (cache) => {
+      // Lädt Assets einzeln: Scheitert eine Datei, stürzt der Worker nicht ab
+      for (const asset of ASSETS_TO_CACHE) {
+        try {
+          await cache.add(asset);
+        } catch (err) {
+          console.warn('Asset übersprungen:', asset);
+        }
+      }
+    })
   );
 });
 
@@ -26,12 +30,11 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('[SW] Entferne veralteten Cache:', key);
             return caches.delete(key);
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => clients.claim())
   );
 });
 
@@ -44,13 +47,6 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
       return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type === 'error') {
-          return networkResponse;
-        }
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
         return networkResponse;
       }).catch(() => {
         if (event.request.mode === 'navigate') {
