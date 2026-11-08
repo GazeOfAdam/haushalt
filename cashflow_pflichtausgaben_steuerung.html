@@ -1,0 +1,2996 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="#1e3a8a" />
+  <meta name="apple-mobile-web-app-title" content="FlowPilot A" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="FlowPilot A" />
+  <meta name="theme-color" content="#1e3a8a" />
+  <title>FlowPilot A – Budget, Schicht-Trinkgeld & Pflichtausgaben</title>
+
+  <!-- PWA Manifest Link -->
+  <link rel="manifest" href="./manifest.json" id="pwa-manifest-link" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%231e3a8a'/><path d='M30 40h40a5 5 0 0 1 5 5v20a5 5 0 0 1-5 5H30a5 5 0 0 1-5-5V45a5 5 0 0 1 5-5z' fill='none' stroke='white' stroke-width='6'/><circle cx='60' cy='55' r='5' fill='white'/></svg>" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%231e3a8a'/><path d='M30 40h40a5 5 0 0 1 5 5v20a5 5 0 0 1-5 5H30a5 5 0 0 1-5-5V45a5 5 0 0 1 5-5z' fill='none' stroke='white' stroke-width='6'/><circle cx='60' cy='55' r='5' fill='white'/></svg>" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
+          },
+          colors: {
+            slate: {
+              850: '#151f32',
+              925: '#0a101d'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Google Fonts Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- React & ReactDOM (Production) + Babel for JSX -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overscroll-behavior-y: none;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.3);
+      border-radius: 9999px;
+    }
+    /* Safe area padding for PWA on iOS/Android */
+    .pb-safe {
+      padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    }
+    .bottom-nav-safe {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.78; }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-indigo-500 selection:text-white transition-colors duration-200">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    // ============================================================================
+    // PWA CODE ASSETS FOR ANDROID & GOOGLE PIXEL (sw.js & manifest.json)
+    // ============================================================================
+    const PWA_MANIFEST_CONTENT = JSON.stringify({
+      name: "FlowPilot Partner A – Budget & Cashflow",
+      short_name: "FlowPilot A",
+      description: "Persönliche Budget-, Cashflow- und Pflichtausgaben-Steuerung für Partner A (Familie mit Baby)",
+      start_url: "./index.html",
+      scope: "./",
+      display: "standalone",
+      orientation: "portrait",
+      background_color: "#0f172a",
+      theme_color: "#1e3a8a",
+      categories: ["finance", "productivity", "utilities"],
+      lang: "de",
+      icons: [
+        {
+          src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='42' fill='%231e3a8a'/><circle cx='96' cy='96' r='60' fill='%234338ca'/><path d='M65 80h62a6 6 0 0 1 6 6v32a6 6 0 0 1-6 6H65a6 6 0 0 1-6-6V86a6 6 0 0 1 6-6z' fill='none' stroke='white' stroke-width='8'/><circle cx='108' cy='102' r='8' fill='%2310b981'/></svg>",
+          sizes: "192x192",
+          type: "image/svg+xml",
+          purpose: "any maskable"
+        },
+        {
+          src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='110' fill='%231e3a8a'/><circle cx='256' cy='256' r='160' fill='%234338ca'/><path d='M175 210h162a14 14 0 0 1 14 14v84a14 14 0 0 1-14 14H175a14 14 0 0 1-14-14v-84a14 14 0 0 1 14-14z' fill='none' stroke='white' stroke-width='20'/><circle cx='290' cy='266' r='20' fill='%2310b981'/></svg>",
+          sizes: "512x512",
+          type: "image/svg+xml",
+          purpose: "any maskable"
+        }
+      ]
+    }, null, 2);
+
+    const PWA_SERVICE_WORKER_CONTENT = `/* FlowPilot Partner A - Progressive Web App Service Worker */
+const CACHE_NAME = 'flowpilot-pixel-cache-v1';
+const ASSETS_TO_CACHE = [
+  './',
+  './index.html',
+  './manifest.json',
+  'https://cdn.tailwindcss.com',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap',
+  'https://unpkg.com/react@18/umd/react.production.min.js',
+  'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
+  'https://unpkg.com/@babel/standalone/babel.min.js'
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('[SW] Pre-caching core components for offline use...');
+      return cache.addAll(ASSETS_TO_CACHE);
+    }).then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            console.log('[SW] Entferne veralteten Cache:', key);
+            return caches.delete(key);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(event.request).then((networkResponse) => {
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type === 'error') {
+          return networkResponse;
+        }
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
+        });
+        return networkResponse;
+      }).catch(() => {
+        if (event.request.mode === 'navigate') {
+          return caches.match('./index.html');
+        }
+      });
+    })
+  );
+});
+`;
+
+    // ============================================================================
+    // 1. INLINE LUCIDE ICON SYSTEM (Zero-latency, React native SVG components)
+    // ============================================================================
+    const Icon = ({ name, size = 20, className = "" }) => {
+      const props = {
+        width: size,
+        height: size,
+        viewBox: "0 0 24 24",
+        fill: "none",
+        stroke: "currentColor",
+        strokeWidth: "2",
+        strokeLinecap: "round",
+        strokeLinejoin: "round",
+        className
+      };
+
+      switch (name) {
+        case 'wallet':
+          return (
+            <svg {...props}>
+              <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+              <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+            </svg>
+          );
+        case 'banknote':
+          return (
+            <svg {...props}>
+              <rect width="20" height="12" x="2" y="6" rx="2" />
+              <circle cx="12" cy="12" r="2" />
+              <path d="M6 12h.01M18 12h.01" />
+            </svg>
+          );
+        case 'check-circle':
+          return (
+            <svg {...props}>
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <path d="m9 11 3 3L22 4" />
+            </svg>
+          );
+        case 'alert-circle':
+          return (
+            <svg {...props}>
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" x2="12" y1="8" y2="12" />
+              <line x1="12.01" y1="16" y2="16" />
+            </svg>
+          );
+        case 'plus':
+          return (
+            <svg {...props}>
+              <path d="M5 12h14" />
+              <path d="M12 5v14" />
+            </svg>
+          );
+        case 'shopping-cart':
+          return (
+            <svg {...props}>
+              <circle cx="8" cy="21" r="1" />
+              <circle cx="19" cy="21" r="1" />
+              <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+            </svg>
+          );
+        case 'utensils':
+          return (
+            <svg {...props}>
+              <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+              <path d="M7 2v20" />
+              <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
+            </svg>
+          );
+        case 'zap':
+          return (
+            <svg {...props}>
+              <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+            </svg>
+          );
+        case 'baby':
+          return (
+            <svg {...props}>
+              <path d="M9 12h.01" />
+              <path d="M15 12h.01" />
+              <path d="M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5" />
+              <path d="M19 6.3a9 9 0 0 1 1.8 3.9 2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2 2 0 0 1 0-3.6A9 9 0 0 1 12 3c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1" />
+            </svg>
+          );
+        case 'clock':
+          return (
+            <svg {...props}>
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          );
+        case 'calendar':
+          return (
+            <svg {...props}>
+              <path d="M8 2v4" />
+              <path d="M16 2v4" />
+              <rect width="18" height="18" x="3" y="4" rx="2" />
+              <path d="M3 10h18" />
+            </svg>
+          );
+        case 'piggy-bank':
+          return (
+            <svg {...props}>
+              <path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2V5z" />
+              <path d="M2 9v1c0 1.1.9 2 2 2h1" />
+              <path d="M16 11h.01" />
+            </svg>
+          );
+        case 'settings':
+          return (
+            <svg {...props}>
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          );
+        case 'download':
+          return (
+            <svg {...props}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" x2="12" y1="15" y2="3" />
+            </svg>
+          );
+        case 'upload':
+          return (
+            <svg {...props}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" x2="12" y1="3" y2="15" />
+            </svg>
+          );
+        case 'sun':
+          return (
+            <svg {...props}>
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2" />
+              <path d="M12 20v2" />
+              <path d="m4.93 4.93 1.41 1.41" />
+              <path d="m17.66 17.66 1.41 1.41" />
+              <path d="M2 12h2" />
+              <path d="M20 12h2" />
+              <path d="m6.34 17.66-1.41 1.41" />
+              <path d="m19.07 4.93-1.41 1.41" />
+            </svg>
+          );
+        case 'moon':
+          return (
+            <svg {...props}>
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
+          );
+        case 'chevron-down':
+          return (
+            <svg {...props}>
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          );
+        case 'chevron-up':
+          return (
+            <svg {...props}>
+              <path d="m18 15-6-6-6 6" />
+            </svg>
+          );
+        case 'chevron-left':
+          return (
+            <svg {...props}>
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          );
+        case 'chevron-right':
+          return (
+            <svg {...props}>
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          );
+        case 'trash':
+          return (
+            <svg {...props}>
+              <path d="M3 6h18" />
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            </svg>
+          );
+        case 'check':
+          return (
+            <svg {...props}>
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          );
+        case 'arrows':
+          return (
+            <svg {...props}>
+              <path d="m16 3 4 4-4 4" />
+              <path d="M20 7H4" />
+              <path d="m8 21-4-4 4-4" />
+              <path d="M4 17h16" />
+            </svg>
+          );
+        case 'car':
+          return (
+            <svg {...props}>
+              <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
+              <circle cx="7" cy="17" r="2" />
+              <path d="M9 17h6" />
+              <circle cx="17" cy="17" r="2" />
+            </svg>
+          );
+        case 'credit-card':
+          return (
+            <svg {...props}>
+              <rect width="20" height="14" x="2" y="5" rx="2" />
+              <line x1="2" x2="22" y1="10" y2="10" />
+            </svg>
+          );
+        case 'lock':
+          return (
+            <svg {...props}>
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          );
+        case 'shield':
+          return (
+            <svg {...props}>
+              <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
+          );
+        case 'info':
+          return (
+            <svg {...props}>
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4" />
+              <path d="M12 8h.01" />
+            </svg>
+          );
+        case 'x':
+          return (
+            <svg {...props}>
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          );
+        case 'refresh':
+          return (
+            <svg {...props}>
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+              <path d="M8 16H3v5" />
+            </svg>
+          );
+        case 'smartphone':
+          return (
+            <svg {...props}>
+              <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
+              <path d="M12 18h.01" />
+            </svg>
+          );
+        case 'copy':
+          return (
+            <svg {...props}>
+              <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+            </svg>
+          );
+        default:
+          return null;
+      }
+    };
+
+    // ============================================================================
+    // 2. HELPER FUNCTIONS & ZEIT- / DATUMSLOGIK
+    // ============================================================================
+    const STORAGE_KEY = 'flowpilot_partner_a_v1';
+
+    const parseDecimal = (val) => {
+      if (typeof val === 'number') return isNaN(val) ? 0 : val;
+      if (!val) return 0;
+      const cleaned = String(val).replace(/\s/g, '').replace(',', '.');
+      const num = parseFloat(cleaned);
+      return isNaN(num) ? 0 : Math.round(num * 100) / 100;
+    };
+
+    const formatEUR = (val, showSign = false) => {
+      const num = Number(val) || 0;
+      const formatted = new Intl.NumberFormat('de-DE', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(num);
+      if (showSign && num > 0) return `+${formatted}`;
+      return formatted;
+    };
+
+    const getTodayISO = () => {
+      try {
+        return new Date().toISOString().split('T')[0];
+      } catch (e) {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      }
+    };
+
+    const getCurrentMonthKey = () => {
+      return getTodayISO().slice(0, 7);
+    };
+
+    const formatMonthLabel = (monthKey) => {
+      if (!monthKey || !monthKey.includes('-')) return '';
+      const [y, m] = monthKey.split('-').map(Number);
+      const d = new Date(y, m - 1, 1);
+      return d.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+    };
+
+    const shiftMonthKey = (monthKey, delta) => {
+      const [y, m] = (monthKey || getCurrentMonthKey()).split('-').map(Number);
+      let newY = y;
+      let newM = m + delta;
+      while (newM < 1) {
+        newM += 12;
+        newY -= 1;
+      }
+      while (newM > 12) {
+        newM -= 12;
+        newY += 1;
+      }
+      return `${newY}-${String(newM).padStart(2, '0')}`;
+    };
+
+    const addDaysISO = (dateStr, days) => {
+      const base = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
+      base.setDate(base.getDate() + days);
+      const yyyy = base.getFullYear();
+      const mm = String(base.getMonth() + 1).padStart(2, '0');
+      const dd = String(base.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
+
+    const getDaysUntil = (dueDateStr) => {
+      if (!dueDateStr) return 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const due = new Date(dueDateStr + 'T00:00:00');
+      const diffMs = due.getTime() - today.getTime();
+      return Math.round(diffMs / (1000 * 60 * 60 * 24));
+    };
+
+    const getLiveWeekRange = () => {
+      const now = new Date();
+      const cur = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const day = cur.getDay();
+      const diffToMonday = (day === 0 ? -6 : 1) - day;
+      const monday = new Date(cur);
+      monday.setDate(cur.getDate() + diffToMonday);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+
+      const toISO = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${dd}`;
+      };
+
+      const target = new Date(cur.valueOf());
+      const dayNr = (cur.getDay() + 6) % 7;
+      target.setDate(target.getDate() - dayNr + 3);
+      const firstThursday = target.valueOf();
+      target.setMonth(0, 1);
+      if (target.getDay() !== 4) {
+        target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+      }
+      const weekNo = 1 + Math.ceil((firstThursday - target) / 604800000);
+
+      return {
+        weekNo,
+        mondayISO: toISO(monday),
+        sundayISO: toISO(sunday),
+        mondayDisplay: monday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
+        sundayDisplay: sunday.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+      };
+    };
+
+    const getInitialState = () => {
+      const today = getTodayISO();
+      return {
+        theme: 'dark',
+        monthlySalaries: {},
+        config: {
+          warmmiete: 1180.00,
+          stromHeizungInternet: 210.00,
+          sonstigeGemeinschaftFix: 45.00,
+          includeSinkingInJoint: true,
+          wohngeld: 470.00,
+          kindergeld: 259.00,
+          budgetSupermarkt: 600.00,
+          budgetAuswaerts: 120.00,
+          budgetEAuto: 110.00,
+          budgetBaby: 259.00,
+          expectedSalary15th: 1650.00,
+          actualSalary15th: 1650.00,
+          salaryConfirmed: true,
+          rateAutoPartnerin: 160.00,
+          rateKfw: 135.00,
+          rateKuehlschrank: 45.00,
+          privateAbos: [
+            { id: 'abo-1', name: 'YouTube Premium', amount: 12.99 },
+            { id: 'abo-2', name: 'Mobilfunkvertrag', amount: 19.99 },
+            { id: 'abo-3', name: 'Cloud & Streaming', amount: 9.99 }
+          ],
+          tagesgeldBalance: 1420.00,
+          sinkingFunds: [
+            { id: 'sf-1', name: 'Kfz-Vollkasko (E-Auto)', cycle: 'yearly', fullAmount: 780.00, divisor: 12, note: 'Jahresbeitrag / 12' },
+            { id: 'sf-2', name: 'GEZ / Rundfunkbeitrag', cycle: 'quarterly', fullAmount: 55.08, divisor: 3, note: '55,08 € vierteljährlich / 3' },
+            { id: 'sf-3', name: 'Haftpflicht & Hausrat', cycle: 'yearly', fullAmount: 192.00, divisor: 12, note: 'Jahresbeitrag / 12' }
+          ]
+        },
+        tips: [
+          { id: 'tip-1', date: today, amount: 65.00, note: 'Spätschicht' },
+          { id: 'tip-2', date: today, amount: 85.00, note: 'Wochenend-Schicht' },
+          { id: 'tip-3', date: today, amount: 55.00, note: 'Frühschicht' }
+        ],
+        expenses: [
+          { id: 'exp-1', date: today, category: 'supermarkt', amount: 84.50, paymentMethod: 'Gemeinschaftskarte', note: 'Wocheneinkauf DM & Rewe' },
+          { id: 'exp-2', date: today, category: 'auswaerts', amount: 32.00, paymentMethod: 'Gemeinschaftskarte', note: 'Pizza bestellt' },
+          { id: 'exp-3', date: today, category: 'baby', amount: 46.80, paymentMethod: 'Gemeinschaftskarte', note: 'Windeln & Pre-Nahrung' },
+          { id: 'exp-4', date: today, category: 'eauto', amount: 0.00, paymentMethod: 'Gemeinschaftskarte', note: 'Ladekosten Sammelrechnung (Monatsende)' }
+        ],
+        payIn30: [
+          {
+            id: 'p30-1',
+            merchant: 'Baby-Walz (PayPal 30 Tage)',
+            item: 'Winterfußsack Kinderwagen',
+            amount: 79.90,
+            purchaseDate: today,
+            dueDate: addDaysISO(today, 12),
+            includeInCurrentMonthPflicht: true,
+            settled: false
+          },
+          {
+            id: 'p30-2',
+            merchant: 'Klarna / Zalando',
+            item: 'Arbeitsschuhe für Schicht',
+            amount: 64.00,
+            purchaseDate: today,
+            dueDate: addDaysISO(today, 24),
+            includeInCurrentMonthPflicht: true,
+            settled: false
+          }
+        ],
+        kleinanzeigen: [
+          {
+            id: 'ka-1',
+            date: today,
+            title: 'Kleinanzeigen: Baby-Beistellbett',
+            amount: 70.00,
+            paidBy: 'A',
+            splitPercentA: 50,
+            settled: false
+          },
+          {
+            id: 'ka-2',
+            date: today,
+            title: 'Kleinanzeigen: Krabbeldecke & Spielbogen',
+            amount: 30.00,
+            paidBy: 'B',
+            splitPercentA: 50,
+            settled: false
+          }
+        ]
+      };
+    };
+
+    // ============================================================================
+    // 3. MAIN APPLICATION COMPONENT
+    // ============================================================================
+    function App() {
+      const currentMonthKey = getCurrentMonthKey();
+      const [selectedMonthKey, setSelectedMonthKey] = useState(currentMonthKey);
+
+      const [state, setState] = useState(() => {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            return {
+              ...getInitialState(),
+              ...parsed,
+              config: { ...getInitialState().config, ...(parsed.config || {}) },
+              monthlySalaries: parsed.monthlySalaries || {}
+            };
+          }
+        } catch (err) {
+          console.error('Fehler beim Laden aus localStorage:', err);
+        }
+        return getInitialState();
+      });
+
+      const [activeTab, setActiveTab] = useState('dashboard');
+      const [modalType, setModalType] = useState(null);
+      const [showFormulaDetails, setShowFormulaDetails] = useState(false);
+      const [toast, setToast] = useState(null);
+      const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
+      const [isInstalledPwa, setIsInstalledPwa] = useState(false);
+
+      // Save to localStorage (single, robust useEffect)
+      useEffect(() => {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (err) {
+          console.error('Fehler beim Speichern in localStorage:', err);
+        }
+      }, [state]);
+
+      // Apply theme
+      useEffect(() => {
+        const root = document.documentElement;
+        if (state.theme === 'dark') {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
+      }, [state.theme]);
+
+      // Service Worker & Android Install Prompt
+      useEffect(() => {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        setIsInstalledPwa(isStandalone);
+
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker
+              .register('./sw.js')
+              .then((registration) => {
+                console.log('FlowPilot Service Worker aktiv:', registration.scope);
+              })
+              .catch((error) => {
+                console.log('Service Worker Hinweis:', error.message);
+              });
+          });
+        }
+
+        const handleBeforeInstall = (e) => {
+          e.preventDefault();
+          setDeferredInstallPrompt(e);
+        };
+
+        const handleAppInstalled = () => {
+          setIsInstalledPwa(true);
+          setDeferredInstallPrompt(null);
+          showNotification('FlowPilot wurde auf dem Smartphone installiert!');
+        };
+
+        window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+        window.addEventListener('appinstalled', handleAppInstalled);
+
+        try {
+          const blob = new Blob([PWA_MANIFEST_CONTENT], { type: 'application/manifest+json' });
+          const manifestURL = URL.createObjectURL(blob);
+          const manifestLink = document.getElementById('pwa-manifest-link');
+          if (manifestLink) {
+            manifestLink.setAttribute('href', manifestURL);
+          }
+        } catch (e) {
+          console.debug('Manifest-Init:', e);
+        }
+
+        return () => {
+          window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+          window.removeEventListener('appinstalled', handleAppInstalled);
+        };
+      }, []);
+
+      const showNotification = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => {
+          setToast((prev) => (prev && prev.message === message ? null : prev));
+        }, 3200);
+      };
+
+      const handleTriggerInstall = async () => {
+        if (!deferredInstallPrompt) {
+          showNotification('Tippe im Browser-Menü auf "App installieren"', 'info');
+          return;
+        }
+        deferredInstallPrompt.prompt();
+        const choice = await deferredInstallPrompt.userChoice;
+        if (choice.outcome === 'accepted') {
+          showNotification('Installation auf Android gestartet...');
+        }
+        setDeferredInstallPrompt(null);
+      };
+
+      // ==========================================================================
+      // 4. CORE FINANCIAL ENGINE (Strikt gefiltert nach selectedMonthKey)
+      // ==========================================================================
+      const finance = useMemo(() => {
+        const c = state.config;
+        const isCurrentMonth = selectedMonthKey === currentMonthKey;
+
+        // A. Sinking Funds Dauerübertrag
+        const sinkingMonthlyTotal = (c.sinkingFunds || []).reduce((acc, item) => {
+          const div = Number(item.divisor) || 12;
+          return acc + (Number(item.fullAmount) || 0) / div;
+        }, 0);
+
+        // B. Gemeinschaftskonto ING
+        const netHousingCost = Math.max(0, (Number(c.warmmiete) || 0) - (Number(c.wohngeld) || 0));
+        const jointFixedOther =
+          (Number(c.stromHeizungInternet) || 0) +
+          (Number(c.sonstigeGemeinschaftFix) || 0) +
+          (c.includeSinkingInJoint ? sinkingMonthlyTotal : 0);
+
+        const netBabyBudgetCost = Math.max(0, (Number(c.budgetBaby) || 0) - (Number(c.kindergeld) || 0));
+
+        const grossJointTotal =
+          (Number(c.warmmiete) || 0) +
+          jointFixedOther +
+          (Number(c.budgetSupermarkt) || 0) +
+          (Number(c.budgetAuswaerts) || 0) +
+          (Number(c.budgetEAuto) || 0) +
+          (Number(c.budgetBaby) || 0);
+
+        const stateReliefTotal = (Number(c.wohngeld) || 0) + (Number(c.kindergeld) || 0);
+        const remainingJointToSplit = Math.max(0, grossJointTotal - stateReliefTotal);
+        const partnerAJointShare = remainingJointToSplit / 2;
+
+        // C. Private Pflichtausgaben Partner A
+        const privateAbosTotal = (c.privateAbos || []).reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
+
+        const openPayIn30Items = (state.payIn30 || []).filter((item) => !item.settled);
+        const settledPayIn30Items = (state.payIn30 || []).filter((item) => item.settled);
+
+        // Fällige Verbindlichkeiten im gewählten Monat
+        const duePayIn30Total = openPayIn30Items
+          .filter((item) => item.dueDate && item.dueDate.startsWith(selectedMonthKey))
+          .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+        const lockedPayIn30Total = openPayIn30Items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+        const privateMandatoryBase =
+          (Number(c.rateAutoPartnerin) || 0) +
+          (Number(c.rateKfw) || 0) +
+          (Number(c.rateKuehlschrank) || 0) +
+          privateAbosTotal;
+
+        const privateMandatoryTotal = privateMandatoryBase + duePayIn30Total;
+
+        // D. Gesamt-Pflichtlast
+        const gesamtPflichtlast = partnerAJointShare + privateMandatoryTotal;
+
+        // Gehaltseingang 15.
+        const monthSalaryData = state.monthlySalaries?.[selectedMonthKey];
+        const salaryConfirmed = monthSalaryData?.confirmed !== undefined
+          ? monthSalaryData.confirmed
+          : (isCurrentMonth ? c.salaryConfirmed : false);
+
+        const effectiveSalary15 = monthSalaryData?.actual !== undefined
+          ? (salaryConfirmed ? monthSalaryData.actual : (Number(c.expectedSalary15th) || 0))
+          : (c.salaryConfirmed ? (Number(c.actualSalary15th) || 0) : (Number(c.expectedSalary15th) || 0));
+
+        const pflichtLueckeNachGehalt = Math.max(0, gesamtPflichtlast - effectiveSalary15);
+        const salarySurplus = Math.max(0, effectiveSalary15 - gesamtPflichtlast);
+
+        // Schicht-Trinkgelder des Monats
+        const monthlyTips = (state.tips || []).filter(
+          (t) => t.date && t.date.startsWith(selectedMonthKey)
+        );
+        const totalTips = monthlyTips.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+
+        // E. Offenes Pflicht-Einzahlungs-Soll
+        const offenesPflichtSoll = Math.max(0, pflichtLueckeNachGehalt - totalTips);
+        const coveredByTips = Math.min(pflichtLueckeNachGehalt, totalTips);
+        const pflichtProgressPercent =
+          pflichtLueckeNachGehalt <= 0
+            ? 100
+            : Math.min(100, Math.round((coveredByTips / pflichtLueckeNachGehalt) * 100));
+
+        const isPflichtCovered = offenesPflichtSoll <= 0.004;
+
+        // F. Freiverfügbares Bargeld / Taschengeld
+        const grossFreePocketMoney = Math.max(0, totalTips - pflichtLueckeNachGehalt) + salarySurplus;
+        const netFreePocketMoney = Math.max(0, grossFreePocketMoney);
+
+        // G. Ausgaben & Wochen-Pacer
+        const monthlyExpenses = (state.expenses || []).filter(
+          (e) => e.date && e.date.startsWith(selectedMonthKey)
+        );
+        const sumByCategory = (cat) =>
+          monthlyExpenses
+            .filter((e) => e.category === cat)
+            .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+        const spentSupermarkt = sumByCategory('supermarkt');
+        const spentAuswaerts = sumByCategory('auswaerts');
+        const spentEAuto = sumByCategory('eauto');
+        const spentBaby = sumByCategory('baby');
+
+        // Dynamischer Wochen-Pacer
+        const liveWeek = getLiveWeekRange();
+        const spentSupermarktThisWeek = (state.expenses || [])
+          .filter(
+            (e) =>
+              e.category === 'supermarkt' &&
+              e.date >= liveWeek.mondayISO &&
+              e.date <= liveWeek.sundayISO
+          )
+          .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+        const [selYear, selMonth] = selectedMonthKey.split('-').map(Number);
+        const daysInSelectedMonth = new Date(selYear, selMonth, 0).getDate();
+        const weeksInMonth = daysInSelectedMonth / 7;
+        const weeklySupermarktAllowance = (Number(c.budgetSupermarkt) || 0) / weeksInMonth;
+        const weeklySupermarktRemaining = weeklySupermarktAllowance - spentSupermarktThisWeek;
+
+        // H. Kleinanzeigen Saldo
+        const openKleinanzeigen = (state.kleinanzeigen || []).filter((k) => !k.settled);
+        let netBalanceForA = 0;
+        openKleinanzeigen.forEach((item) => {
+          const amt = Number(item.amount) || 0;
+          const shareAPercent = Number(item.splitPercentA ?? 50) / 100;
+          const shareBPercent = 1 - shareAPercent;
+          if (item.paidBy === 'A') {
+            netBalanceForA += amt * shareBPercent;
+          } else {
+            netBalanceForA -= amt * shareAPercent;
+          }
+        });
+
+        return {
+          isCurrentMonth,
+          sinkingMonthlyTotal,
+          netHousingCost,
+          jointFixedOther,
+          grossJointTotal,
+          stateReliefTotal,
+          remainingJointToSplit,
+          partnerAJointShare,
+          privateAbosTotal,
+          privateMandatoryBase,
+          duePayIn30Total,
+          lockedPayIn30Total,
+          privateMandatoryTotal,
+          gesamtPflichtlast,
+          effectiveSalary15,
+          salaryConfirmed,
+          pflichtLueckeNachGehalt,
+          totalTips,
+          monthlyTips,
+          monthlyExpenses,
+          offenesPflichtSoll,
+          coveredByTips,
+          pflichtProgressPercent,
+          isPflichtCovered,
+          netFreePocketMoney,
+          liveWeek,
+          spentSupermarkt,
+          spentAuswaerts,
+          spentEAuto,
+          spentBaby,
+          spentSupermarktThisWeek,
+          weeklySupermarktAllowance,
+          weeklySupermarktRemaining,
+          openPayIn30Items,
+          settledPayIn30Items,
+          openKleinanzeigen,
+          netBalanceForA
+        };
+      }, [state, selectedMonthKey, currentMonthKey]);
+
+      // ==========================================================================
+      // 5. ACTION HANDLERS
+      // ==========================================================================
+      const toggleTheme = () => {
+        setState((prev) => ({
+          ...prev,
+          theme: prev.theme === 'dark' ? 'light' : 'dark'
+        }));
+      };
+
+      const addTip = (amount, date, note) => {
+        const val = parseDecimal(amount);
+        if (val <= 0) return;
+        const tipDate = date || getTodayISO();
+        const newTip = {
+          id: 'tip-' + Date.now(),
+          date: tipDate,
+          amount: val,
+          note: note || 'Schicht-Trinkgeld'
+        };
+        setState((prev) => ({
+          ...prev,
+          tips: [newTip, ...(prev.tips || [])]
+        }));
+        showNotification(`+${formatEUR(val)} Schicht-Trinkgeld für ${tipDate} verbucht!`);
+      };
+
+      const deleteTip = (id) => {
+        setState((prev) => ({
+          ...prev,
+          tips: (prev.tips || []).filter((t) => t.id !== id)
+        }));
+        showNotification('Trinkgeld-Eintrag gelöscht', 'info');
+      };
+
+      const addExpense = ({ amount, category, paymentMethod, note, date, addToKleinanzeigen }) => {
+        const val = parseDecimal(amount);
+        if (val <= 0) return;
+        const expDate = date || getTodayISO();
+        const newExp = {
+          id: 'exp-' + Date.now(),
+          date: expDate,
+          category,
+          amount: val,
+          paymentMethod,
+          note: note || ''
+        };
+
+        let updatedKleinanzeigen = state.kleinanzeigen || [];
+        if (addToKleinanzeigen && (paymentMethod === 'Bar A' || paymentMethod === 'Bar B')) {
+          const catLabels = {
+            supermarkt: 'Supermarkt/Drogerie',
+            auswaerts: 'Auswärts essen',
+            eauto: 'E-Auto Laden',
+            baby: 'Babybedarf'
+          };
+          updatedKleinanzeigen = [
+            {
+              id: 'ka-' + Date.now(),
+              date: expDate,
+              title: `Barauslage (${catLabels[category] || category})${note ? ': ' + note : ''}`,
+              amount: val,
+              paidBy: paymentMethod === 'Bar A' ? 'A' : 'B',
+              splitPercentA: 50,
+              settled: false
+            },
+            ...updatedKleinanzeigen
+          ];
+        }
+
+        setState((prev) => ({
+          ...prev,
+          expenses: [newExp, ...(prev.expenses || [])],
+          kleinanzeigen: updatedKleinanzeigen
+        }));
+        showNotification(`Ausgabe (${formatEUR(val)}) gespeichert!`);
+      };
+
+      const deleteExpense = (id) => {
+        setState((prev) => ({
+          ...prev,
+          expenses: (prev.expenses || []).filter((e) => e.id !== id)
+        }));
+        showNotification('Ausgabe entfernt', 'info');
+      };
+
+      const updateSalary15th = (amountStr, confirmed = true) => {
+        const val = parseDecimal(amountStr);
+        setState((prev) => ({
+          ...prev,
+          config: {
+            ...prev.config,
+            actualSalary15th: val,
+            salaryConfirmed: confirmed
+          },
+          monthlySalaries: {
+            ...(prev.monthlySalaries || {}),
+            [selectedMonthKey]: { actual: val, confirmed }
+          }
+        }));
+        showNotification(`Netto-Gehalt für ${formatMonthLabel(selectedMonthKey)} (${formatEUR(val)}) gespeichert!`);
+      };
+
+      const addPayIn30 = ({ merchant, item, amount, purchaseDate, dueDate }) => {
+        const val = parseDecimal(amount);
+        if (val <= 0) return;
+        const buyDate = purchaseDate || getTodayISO();
+        const payDate = dueDate || addDaysISO(buyDate, 30);
+        const newEntry = {
+          id: 'p30-' + Date.now(),
+          merchant: merchant || 'Klarna / PayPal 30T',
+          item: item || 'Später-Bezahlen-Kauf',
+          amount: val,
+          purchaseDate: buyDate,
+          dueDate: payDate,
+          includeInCurrentMonthPflicht: true,
+          settled: false
+        };
+        setState((prev) => ({
+          ...prev,
+          payIn30: [newEntry, ...(prev.payIn30 || [])]
+        }));
+        showNotification(`${formatEUR(val)} als Pay-in-30 gesperrt!`);
+      };
+
+      const markPayIn30Settled = (id) => {
+        setState((prev) => ({
+          ...prev,
+          payIn30: (prev.payIn30 || []).map((item) =>
+            item.id === id ? { ...item, settled: !item.settled } : item
+          )
+        }));
+        showNotification('Status der Verbindlichkeit aktualisiert!');
+      };
+
+      const deletePayIn30 = (id) => {
+        setState((prev) => ({
+          ...prev,
+          payIn30: (prev.payIn30 || []).filter((item) => item.id !== id)
+        }));
+        showNotification('Pay-in-30 Eintrag gelöscht', 'info');
+      };
+
+      const addKleinanzeigenItem = ({ title, amount, paidBy, splitPercentA }) => {
+        const val = parseDecimal(amount);
+        if (val <= 0) return;
+        const newEntry = {
+          id: 'ka-' + Date.now(),
+          date: getTodayISO(),
+          title: title || 'Kleinanzeigen / Barkauf',
+          amount: val,
+          paidBy: paidBy || 'A',
+          splitPercentA: Number(splitPercentA ?? 50),
+          settled: false
+        };
+        setState((prev) => ({
+          ...prev,
+          kleinanzeigen: [newEntry, ...(prev.kleinanzeigen || [])]
+        }));
+        showNotification('Barkauf im Verrechner gespeichert!');
+      };
+
+      const settleAllKleinanzeigen = () => {
+        setState((prev) => ({
+          ...prev,
+          kleinanzeigen: (prev.kleinanzeigen || []).map((k) => ({ ...k, settled: true }))
+        }));
+        showNotification('Alle offenen Barauslagen als ausgeglichen markiert!');
+      };
+
+      const deleteKleinanzeigen = (id) => {
+        setState((prev) => ({
+          ...prev,
+          kleinanzeigen: (prev.kleinanzeigen || []).filter((k) => k.id !== id)
+        }));
+      };
+
+      const resetNewMonth = () => {
+        setState((prev) => ({
+          ...prev,
+          tips: (prev.tips || []).filter((t) => !t.date || !t.date.startsWith(selectedMonthKey)),
+          expenses: (prev.expenses || []).filter((e) => !e.date || !e.date.startsWith(selectedMonthKey)),
+          monthlySalaries: {
+            ...(prev.monthlySalaries || {}),
+            [selectedMonthKey]: { actual: prev.config.expectedSalary15th, confirmed: false }
+          }
+        }));
+        showNotification(`Buchungen für ${formatMonthLabel(selectedMonthKey)} zurückgesetzt!`);
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col max-w-md mx-auto bg-slate-100 dark:bg-slate-950 border-x border-slate-200/70 dark:border-slate-800/80 shadow-2xl relative">
+          {/* Header mit Monatsnavigation */}
+          <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800/80 px-4 pt-3 pb-2.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-900 to-blue-900 flex items-center justify-center text-white shadow-md shadow-blue-900/30">
+                  <Icon name="wallet" size={17} />
+                </div>
+                <div>
+                  <h1 className="font-bold text-sm tracking-tight text-slate-900 dark:text-white leading-tight">
+                    FlowPilot <span className="text-blue-600 dark:text-blue-400">Partner A</span>
+                  </h1>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                    Haushalt + Baby (8 Mon.)
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                {deferredInstallPrompt && (
+                  <button
+                    onClick={handleTriggerInstall}
+                    className="px-2.5 py-1.5 rounded-xl bg-blue-900/20 hover:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-800/30 text-xs font-bold flex items-center gap-1 active:scale-95 transition animate-pulse"
+                    title="Auf Google Pixel installieren"
+                  >
+                    <Icon name="smartphone" size={13} />
+                    <span>Installieren</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setModalType('tip')}
+                  className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 text-xs font-semibold flex items-center gap-1 active:scale-95 transition"
+                  title="Schicht-Trinkgeld eintragen"
+                >
+                  <Icon name="plus" size={14} />
+                  <span>Trinkgeld</span>
+                </button>
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 rounded-xl bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300/70 dark:hover:bg-slate-700 active:scale-95 transition"
+                  aria-label="Theme wechseln"
+                >
+                  <Icon name={state.theme === 'dark' ? 'sun' : 'moon'} size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Monatsnavigation */}
+            <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800/60">
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setSelectedMonthKey(shiftMonthKey(selectedMonthKey, -1))}
+                  className="p-1.5 rounded-xl bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-300/70 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 active:scale-95 transition"
+                  title="Vorheriger Monat"
+                >
+                  <Icon name="chevron-left" size={16} />
+                </button>
+
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                  <Icon name="calendar" size={13} className="text-indigo-500 shrink-0" />
+                  <span className="text-xs font-bold font-mono tracking-tight text-slate-900 dark:text-white">
+                    {formatMonthLabel(selectedMonthKey)}
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => setSelectedMonthKey(shiftMonthKey(selectedMonthKey, 1))}
+                  className="p-1.5 rounded-xl bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-300/70 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 active:scale-95 transition"
+                  title="Nächster Monat"
+                >
+                  <Icon name="chevron-right" size={16} />
+                </button>
+              </div>
+
+              {selectedMonthKey !== currentMonthKey ? (
+                <button
+                  onClick={() => setSelectedMonthKey(currentMonthKey)}
+                  className="px-2.5 py-1 rounded-xl bg-indigo-600 text-white text-[11px] font-bold shadow-sm active:scale-95 transition flex items-center gap-1"
+                >
+                  <Icon name="refresh" size={11} />
+                  <span>Heute</span>
+                </button>
+              ) : (
+                <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  Aktueller Monat
+                </span>
+              )}
+            </div>
+          </header>
+
+          {/* Toast Notification */}
+          {toast && (
+            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm pointer-events-none">
+              <div className="px-4 py-3 rounded-2xl shadow-xl border backdrop-blur-md bg-slate-900/95 dark:bg-slate-800/95 text-white border-indigo-500/40 flex items-center gap-2.5 text-xs font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-ping" />
+                <span>{toast.message}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Main Screens */}
+          <main className="flex-1 px-4 pt-4 pb-safe space-y-4">
+            {activeTab === 'dashboard' && (
+              <DashboardScreen
+                state={state}
+                finance={finance}
+                selectedMonthKey={selectedMonthKey}
+                showFormulaDetails={showFormulaDetails}
+                setShowFormulaDetails={setShowFormulaDetails}
+                onAddTip={addTip}
+                onDeleteTip={deleteTip}
+                onDeleteExpense={deleteExpense}
+                onOpenModal={setModalType}
+                onUpdateSalary={updateSalary15th}
+                onSwitchTab={setActiveTab}
+              />
+            )}
+
+            {activeTab === 'pay30' && (
+              <PayIn30Screen
+                state={state}
+                finance={finance}
+                selectedMonthKey={selectedMonthKey}
+                onAddPayIn30={addPayIn30}
+                onMarkSettled={markPayIn30Settled}
+                onDeletePayIn30={deletePayIn30}
+              />
+            )}
+
+            {activeTab === 'sinking' && (
+              <SinkingFundsScreen
+                state={state}
+                setState={setState}
+                finance={finance}
+                onAddKleinanzeigen={addKleinanzeigenItem}
+                onSettleAllKleinanzeigen={settleAllKleinanzeigen}
+                onDeleteKleinanzeigen={deleteKleinanzeigen}
+                showNotification={showNotification}
+              />
+            )}
+
+            {activeTab === 'settings' && (
+              <SettingsScreen
+                state={state}
+                setState={setState}
+                finance={finance}
+                selectedMonthKey={selectedMonthKey}
+                isInstalledPwa={isInstalledPwa}
+                deferredInstallPrompt={deferredInstallPrompt}
+                onTriggerInstall={handleTriggerInstall}
+                onResetNewMonth={resetNewMonth}
+                showNotification={showNotification}
+              />
+            )}
+          </main>
+
+          {/* Quick Action Modal */}
+          {modalType && (
+            <QuickModal
+              modalType={modalType}
+              onClose={() => setModalType(null)}
+              state={state}
+              finance={finance}
+              selectedMonthKey={selectedMonthKey}
+              onAddTip={addTip}
+              onAddExpense={addExpense}
+              onUpdateSalary={updateSalary15th}
+            />
+          )}
+
+          {/* Bottom Nav */}
+          <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 bottom-nav-safe">
+            <div className="grid grid-cols-4 px-2 py-1.5">
+              <NavButton
+                active={activeTab === 'dashboard'}
+                onClick={() => setActiveTab('dashboard')}
+                icon="wallet"
+                label="Dashboard"
+                badge={!finance.isPflichtCovered ? 'Offen' : 'OK'}
+                badgeColor={!finance.isPflichtCovered ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}
+              />
+              <NavButton
+                active={activeTab === 'pay30'}
+                onClick={() => setActiveTab('pay30')}
+                icon="clock"
+                label="Pay in 30"
+                badge={finance.openPayIn30Items.length > 0 ? String(finance.openPayIn30Items.length) : null}
+                badgeColor="bg-rose-500 text-white"
+              />
+              <NavButton
+                active={activeTab === 'sinking'}
+                onClick={() => setActiveTab('sinking')}
+                icon="piggy-bank"
+                label="Rücklagen"
+              />
+              <NavButton
+                active={activeTab === 'settings'}
+                onClick={() => setActiveTab('settings')}
+                icon="settings"
+                label="Setup & Backup"
+              />
+            </div>
+          </nav>
+        </div>
+      );
+    }
+
+    // ============================================================================
+    // 6. SCREEN 1: DASHBOARD ("Status & Tagesüberblick")
+    // ============================================================================
+    function DashboardScreen({
+      state,
+      finance,
+      selectedMonthKey,
+      showFormulaDetails,
+      setShowFormulaDetails,
+      onDeleteTip,
+      onDeleteExpense,
+      onOpenModal,
+      onSwitchTab
+    }) {
+      return (
+        <div className="space-y-4">
+          {/* PRIMÄRE STATUSKARTE GANZ OBEN: DYNAMISCHER SCHWELLENWERT */}
+          <div className={`rounded-3xl p-4.5 border shadow-lg transition-all ${
+            finance.isPflichtCovered
+              ? 'bg-gradient-to-br from-emerald-950/80 via-slate-900 to-slate-900 border-emerald-500/40 text-white'
+              : 'bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border-indigo-500/30 text-white'
+          }`}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Pflicht-Status ({formatMonthLabel(selectedMonthKey)})
+                </span>
+                {finance.isPflichtCovered ? (
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold">
+                      <Icon name="check-circle" size={14} />
+                      <span>Alle Pflichtausgaben gedeckt!</span>
+                    </div>
+                    <div className="pt-2">
+                      <div className="text-[11px] text-slate-400">Freiverfügbares Taschengeld</div>
+                      <div className="text-3xl font-extrabold font-mono text-emerald-400">
+                        {formatEUR(finance.netFreePocketMoney)}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-2xl font-black font-mono tracking-tight text-amber-400">
+                      Noch {formatEUR(finance.offenesPflichtSoll)}
+                    </div>
+                    <div className="text-xs text-slate-300 font-medium">
+                      Pflicht-Einzahlungsbedarf auf Bankkonto
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => setShowFormulaDetails(!showFormulaDetails)}
+                className="p-2 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs flex items-center gap-1"
+                title="Berechnung aufklappen"
+              >
+                <Icon name="info" size={15} />
+                <span className="text-[11px] font-semibold">{showFormulaDetails ? 'Schließen' : 'Formel'}</span>
+              </button>
+            </div>
+
+            {/* Fortschrittsbalken Trinkgeld vs. Pflichtlücke */}
+            {!finance.isPflichtCovered && (
+              <div className="mt-4 pt-3 border-t border-white/10 space-y-1.5">
+                <div className="flex justify-between text-xs text-slate-300">
+                  <span>Trinkgeld eingezahlt: <b className="font-mono text-white">{formatEUR(finance.coveredByTips)}</b></span>
+                  <span>Lücke: <b className="font-mono text-white">{formatEUR(finance.pflichtLueckeNachGehalt)}</b></span>
+                </div>
+                <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden border border-white/10">
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 rounded-full transition-all duration-500"
+                    style={{ width: `${finance.pflichtProgressPercent}%` }}
+                  />
+                </div>
+                <div className="text-[10px] text-right text-slate-400 font-mono">
+                  {finance.pflichtProgressPercent}% der Pflichtlücke durch Trinkgeld gedeckt
+                </div>
+              </div>
+            )}
+
+            {/* AUFKLAPPBARE FORMEL-DETAILS & TRANSPARENZ */}
+            {showFormulaDetails && (
+              <div className="mt-4 pt-3 border-t border-white/10 text-xs space-y-2 font-mono text-slate-300 bg-black/20 p-3 rounded-2xl">
+                <div className="font-sans font-bold text-slate-200 text-xs uppercase tracking-wider mb-1">
+                  Transparente Pflichtlast-Formel
+                </div>
+                <div className="flex justify-between text-[11px]">
+                  <span>Miete (1.180 €) - Wohngeld (470 €):</span>
+                  <span>{formatEUR(finance.netHousingCost)}</span>
+                </div>
+                <div className="flex justify-between text-[11px]">
+                  <span>Gemeinschaftsfix + Tagesgeld:</span>
+                  <span>{formatEUR(finance.jointFixedOther)}</span>
+                </div>
+                <div className="flex justify-between text-[11px]">
+                  <span>Alltagsbudgets (Baby 259 € = Kindergeld):</span>
+                  <span>{formatEUR((Number(state.config.budgetSupermarkt) || 0) + (Number(state.config.budgetAuswaerts) || 0) + (Number(state.config.budgetEAuto) || 0))}</span>
+                </div>
+                <div className="flex justify-between font-bold text-indigo-300 border-t border-white/10 pt-1 text-[11px]">
+                  <span>50% Gemeinschaftsanteil Partner A:</span>
+                  <span>{formatEUR(finance.partnerAJointShare)}</span>
+                </div>
+                <div className="flex justify-between text-[11px]">
+                  <span>Private Pflicht (160 € PKW + KfW + Kühlschr. + Abos):</span>
+                  <span>{formatEUR(finance.privateMandatoryBase)}</span>
+                </div>
+                {finance.duePayIn30Total > 0 && (
+                  <div className="flex justify-between text-rose-300 text-[11px]">
+                    <span>Fällige Pay-in-30 Verbindlichkeiten ({formatMonthLabel(selectedMonthKey)}):</span>
+                    <span>+{formatEUR(finance.duePayIn30Total)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-white border-t border-white/10 pt-1">
+                  <span>Gesamt-Pflichtlast Monat:</span>
+                  <span>{formatEUR(finance.gesamtPflichtlast)}</span>
+                </div>
+                <div className="flex justify-between text-emerald-300 text-[11px]">
+                  <span>Netto-Gehaltseingang am 15.:</span>
+                  <span>-{formatEUR(finance.effectiveSalary15)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-amber-300 border-t border-white/10 pt-1">
+                  <span>Pflichtlücke vor Trinkgeld:</span>
+                  <span>{formatEUR(finance.pflichtLueckeNachGehalt)}</span>
+                </div>
+                <div className="flex justify-between text-emerald-400 text-[11px]">
+                  <span>Schicht-Trinkgeld im Monat:</span>
+                  <span>-{formatEUR(finance.totalTips)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* SCHNELLEINGABEN LEISTE */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              onClick={() => onOpenModal('tip')}
+              className="py-3 px-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition"
+            >
+              <Icon name="banknote" size={17} />
+              <span>+ Trinkgeld buchen</span>
+            </button>
+            <button
+              onClick={() => onOpenModal('expense')}
+              className="py-3 px-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition"
+            >
+              <Icon name="shopping-cart" size={17} />
+              <span>+ Ausgabe erfassen</span>
+            </button>
+          </div>
+
+          {/* GEHALT AM 15. SCHNELLSTATUS */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-sm border border-slate-200/80 dark:border-slate-800/90 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <Icon name="credit-card" size={20} />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Gehaltseingang (am 15.)
+                </span>
+                <div className="font-mono font-bold text-sm text-slate-900 dark:text-white">
+                  {formatEUR(finance.effectiveSalary15)}
+                  <span className={`ml-2 text-[10px] font-sans font-semibold px-2 py-0.5 rounded-full ${
+                    finance.salaryConfirmed
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                  }`}>
+                    {finance.salaryConfirmed ? '✓ Bestätigt' : 'Erwartet'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => onOpenModal('salary')}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200"
+            >
+              Anpassen
+            </button>
+          </div>
+
+          {/* ALLTAGS-BUDGETS MIT WOCHEN-PACER */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-sm border border-slate-200/80 dark:border-slate-800/90 space-y-3.5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Alltags-Budgets (Gemeinschaft)
+              </h2>
+              <span className="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">
+                {formatMonthLabel(selectedMonthKey)}
+              </span>
+            </div>
+
+            {/* 1. Supermarkt & Drogerie (mit Wochen-Pacer) */}
+            <BudgetBar
+              icon="shopping-cart"
+              title="Supermarkt & Drogerie"
+              spent={finance.spentSupermarkt}
+              total={Number(state.config.budgetSupermarkt) || 0}
+              color="indigo"
+              subInfo={
+                <div className="mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-500 dark:text-slate-400">
+                    KW {finance.liveWeek.weekNo} Pacer ({finance.liveWeek.mondayDisplay} - {finance.liveWeek.sundayDisplay}):
+                  </span>
+                  <span className={`font-mono font-bold ${
+                    finance.weeklySupermarktRemaining >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
+                  }`}>
+                    Noch {formatEUR(finance.weeklySupermarktRemaining)} diese Woche
+                  </span>
+                </div>
+              }
+            />
+
+            {/* 2. Auswärts / Bestellen */}
+            <BudgetBar
+              icon="utensils"
+              title="Auswärts essen / Bestellen"
+              spent={finance.spentAuswaerts}
+              total={Number(state.config.budgetAuswaerts) || 0}
+              color="amber"
+            />
+
+            {/* 3. E-Auto Ladekosten (Sammelrechnung Monatsende) */}
+            <BudgetBar
+              icon="zap"
+              title="E-Auto Ladekosten (Sammelrechnung)"
+              spent={finance.spentEAuto}
+              total={Number(state.config.budgetEAuto) || 0}
+              color="blue"
+              extraBadge="Sammelrechnung am Monatsende"
+            />
+
+            {/* 4. Babybedarf (1:1 aus 259 € Kindergeld) */}
+            <BudgetBar
+              icon="baby"
+              title="Babybedarf (8 Monate)"
+              spent={finance.spentBaby}
+              total={Number(state.config.budgetBaby) || 0}
+              color="emerald"
+              extraBadge="1:1 durch Kindergeld gedeckt"
+            />
+          </div>
+
+          {/* TRANSAKTIONSLISTE DES MONATS */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-sm border border-slate-200/80 dark:border-slate-800/90 space-y-3">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Buchungen ({formatMonthLabel(selectedMonthKey)})
+            </h2>
+
+            <div className="space-y-2">
+              {/* Trinkgelder */}
+              {finance.monthlyTips.map((tip) => (
+                <div
+                  key={tip.id}
+                  className="flex items-center justify-between p-2.5 rounded-2xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 text-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                      <Icon name="banknote" size={16} />
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 dark:text-white">
+                        {tip.note || 'Schicht-Trinkgeld'}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                        {tip.date}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      +{formatEUR(tip.amount)}
+                    </span>
+                    <button
+                      onClick={() => onDeleteTip(tip.id)}
+                      className="p-1 text-slate-400 hover:text-rose-500 active:scale-95 transition"
+                      title="Löschen"
+                    >
+                      <Icon name="trash" size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Ausgaben */}
+              {finance.monthlyExpenses.map((exp) => (
+                <div
+                  key={exp.id}
+                  className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 text-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                      <Icon
+                        name={
+                          exp.category === 'supermarkt' ? 'shopping-cart' :
+                          exp.category === 'auswaerts' ? 'utensils' :
+                          exp.category === 'eauto' ? 'zap' : 'baby'
+                        }
+                        size={16}
+                      />
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 dark:text-white">
+                        {exp.note || exp.category}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                        {exp.date} • {exp.paymentMethod}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">
+                      -{formatEUR(exp.amount)}
+                    </span>
+                    <button
+                      onClick={() => onDeleteExpense(exp.id)}
+                      className="p-1 text-slate-400 hover:text-rose-500 active:scale-95 transition"
+                      title="Löschen"
+                    >
+                      <Icon name="trash" size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {finance.monthlyTips.length === 0 && finance.monthlyExpenses.length === 0 && (
+                <div className="text-center py-6 text-xs text-slate-400">
+                  Noch keine Buchungen in {formatMonthLabel(selectedMonthKey)} erfasst.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function BudgetBar({ icon, title, spent, total, color, subInfo, extraBadge }) {
+      const pct = total > 0 ? Math.min(100, Math.round((spent / total) * 100)) : 0;
+      const remaining = total - spent;
+      const isOver = remaining < 0;
+
+      const colorMap = {
+        indigo: 'bg-indigo-500',
+        amber: 'bg-amber-500',
+        blue: 'bg-blue-500',
+        emerald: 'bg-emerald-500'
+      };
+
+      return (
+        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800/80">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-2">
+              <Icon name={icon} size={16} className="text-slate-500 dark:text-slate-400" />
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{title}</span>
+            </div>
+            {extraBadge && (
+              <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                {extraBadge}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-baseline justify-between text-xs font-mono mb-1.5">
+            <span className="font-bold text-slate-900 dark:text-white">
+              {formatEUR(spent)} <span className="text-[10px] text-slate-400 font-normal">von {formatEUR(total)}</span>
+            </span>
+            <span className={`font-bold ${isOver ? 'text-rose-500' : 'text-slate-500 dark:text-slate-400'}`}>
+              {isOver ? `Überzug ${formatEUR(Math.abs(remaining))}` : `Rest ${formatEUR(remaining)}`}
+            </span>
+          </div>
+
+          <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div
+              className={`h-full ${isOver ? 'bg-rose-500' : (colorMap[color] || 'bg-indigo-500')} rounded-full transition-all duration-300`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+
+          {subInfo}
+        </div>
+      );
+    }
+
+    // ============================================================================
+    // 7. SCREEN 2: "PAY IN 30 DAYS" & VERBINDLICHKEITEN-MANAGER
+    // ============================================================================
+    function PayIn30Screen({ state, finance, selectedMonthKey, onAddPayIn30, onMarkSettled, onDeletePayIn30 }) {
+      const [showAddForm, setShowAddForm] = useState(false);
+      const [merchant, setMerchant] = useState('');
+      const [item, setItem] = useState('');
+      const [amount, setAmount] = useState('');
+      const [purchaseDate, setPurchaseDate] = useState(() => getTodayISO());
+      const [dueDate, setDueDate] = useState(() => addDaysISO(getTodayISO(), 30));
+
+      const handleAddSubmit = (e) => {
+        e.preventDefault();
+        onAddPayIn30({
+          merchant,
+          item,
+          amount,
+          purchaseDate,
+          dueDate
+        });
+        setMerchant('');
+        setItem('');
+        setAmount('');
+        setShowAddForm(false);
+      };
+
+      return (
+        <div className="space-y-4">
+          {/* Header Card: Gesperrter Gesamtbetrag */}
+          <div className="rounded-3xl p-4 bg-gradient-to-br from-rose-950 via-slate-900 to-slate-900 border border-rose-500/30 text-white shadow-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-rose-500/20 text-rose-300 flex items-center justify-center shrink-0">
+                  <Icon name="lock" size={18} />
+                </div>
+                <div>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-rose-200">
+                    Gesperrter Betrag (Pay in 30)
+                  </h2>
+                  <div className="text-2xl font-black font-mono text-white">
+                    {formatEUR(finance.lockedPayIn30Total)}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold flex items-center gap-1 active:scale-95 transition"
+              >
+                <Icon name={showAddForm ? 'x' : 'plus'} size={15} />
+                <span>{showAddForm ? 'Schließen' : '+ Neuer Kauf'}</span>
+              </button>
+            </div>
+
+            <div className="text-[11px] text-slate-300">
+              Davon fällig in {formatMonthLabel(selectedMonthKey)}:{' '}
+              <b className="font-mono text-white">{formatEUR(finance.duePayIn30Total)}</b> (bereits in Monats-Pflichtlast einkalkuliert).
+            </div>
+          </div>
+
+          {/* Formular zum Erfassen */}
+          {showAddForm && (
+            <form onSubmit={handleAddSubmit} className="bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-sm border border-slate-200/80 dark:border-slate-800/90 space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                Später-Bezahlen-Kauf erfassen (Klarna / PayPal)
+              </h3>
+              <div className="grid grid-cols-2 gap-2.5">
+                <input
+                  type="text"
+                  placeholder="Händler (z.B. Klarna)"
+                  value={merchant}
+                  onChange={(e) => setMerchant(e.target.value)}
+                  required
+                  className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs"
+                />
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Betrag in €"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  required
+                  className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono text-xs font-bold"
+                />
+              </div>
+              <input
+                type="text"
+                placeholder="Artikel / Zweck (z.B. Winterstiefel)"
+                value={item}
+                onChange={(e) => setItem(e.target.value)}
+                required
+                className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs"
+              />
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Kaufdatum</label>
+                  <input
+                    type="date"
+                    value={purchaseDate}
+                    onChange={(e) => setPurchaseDate(e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Fälligkeit</label>
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition"
+              >
+                Als gesperrt buchen
+              </button>
+            </form>
+          )}
+
+          {/* Offene Verbindlichkeiten */}
+          <div className="space-y-2.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">
+              Offene Zahlungen ({finance.openPayIn30Items.length})
+            </h3>
+
+            {finance.openPayIn30Items.map((entry) => {
+              const days = getDaysUntil(entry.dueDate);
+              const isDueInMonth = entry.dueDate && entry.dueDate.startsWith(selectedMonthKey);
+
+              let badgeStyle = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+              let badgeText = `Fällig in ${days} Tagen`;
+              if (days <= 0) {
+                badgeStyle = 'bg-rose-500/20 text-rose-500 dark:text-rose-400 border-rose-500/40 animate-pulse';
+                badgeText = days === 0 ? 'Heute fällig!' : `Überfällig seit ${Math.abs(days)} Tagen`;
+              } else if (days <= 7) {
+                badgeStyle = 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30';
+                badgeText = `Fällig in ${days} Tagen`;
+              }
+
+              return (
+                <div
+                  key={entry.id}
+                  className="bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-sm border border-slate-200/80 dark:border-slate-800/90 space-y-2.5"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-bold text-sm text-slate-900 dark:text-white leading-snug">
+                        {entry.item}
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {entry.merchant} • Gekauft am {entry.purchaseDate}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono font-bold text-base text-rose-600 dark:text-rose-400">
+                        {formatEUR(entry.amount)}
+                      </div>
+                      {isDueInMonth && (
+                        <span className="text-[9px] font-semibold text-indigo-500 block">
+                          Fällt in {formatMonthLabel(selectedMonthKey)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${badgeStyle}`}>
+                      {badgeText} ({entry.dueDate})
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onMarkSettled(entry.id)}
+                        className="px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold active:scale-95 transition"
+                      >
+                        ✓ Abgebucht
+                      </button>
+                      <button
+                        onClick={() => onDeletePayIn30(entry.id)}
+                        className="p-1 text-slate-400 hover:text-rose-500"
+                        title="Löschen"
+                      >
+                        <Icon name="trash" size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {finance.openPayIn30Items.length === 0 && (
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 text-center text-xs text-slate-400 border border-slate-200/80 dark:border-slate-800">
+                Keine offenen Pay-in-30 Verbindlichkeiten. Sauber! 🎉
+              </div>
+            )}
+          </div>
+
+          {/* Erledigte Zahlungen */}
+          {finance.settledPayIn30Items.length > 0 && (
+            <div className="space-y-2 pt-2">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1">
+                Kürzlich abgebucht ({finance.settledPayIn30Items.length})
+              </h4>
+              <div className="space-y-1.5 opacity-60">
+                {finance.settledPayIn30Items.slice(0, 3).map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-200/50 dark:bg-slate-800/40 text-xs"
+                  >
+                    <span>{item.item} ({item.merchant})</span>
+                    <span className="font-mono line-through">{formatEUR(item.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ============================================================================
+    // 8. SCREEN 3: SINKING FUNDS & RÜCKLAGEN (ING TAGESGELD)
+    // ============================================================================
+    function SinkingFundsScreen({
+      state,
+      setState,
+      finance,
+      onAddKleinanzeigen,
+      onSettleAllKleinanzeigen,
+      onDeleteKleinanzeigen,
+      showNotification
+    }) {
+      const [showAddFund, setShowAddFund] = useState(false);
+      const [fundName, setFundName] = useState('');
+      const [fundAmount, setFundAmount] = useState('');
+      const [fundDivisor, setFundDivisor] = useState('12');
+
+      const [kaTitle, setKaTitle] = useState('');
+      const [kaAmount, setKaAmount] = useState('');
+      const [kaPaidBy, setKaPaidBy] = useState('A');
+
+      const handleAddFundSubmit = (e) => {
+        e.preventDefault();
+        const val = parseDecimal(fundAmount);
+        const div = parseInt(fundDivisor, 10) || 12;
+        if (!fundName || val <= 0) return;
+        const newFund = {
+          id: 'sf-' + Date.now(),
+          name: fundName,
+          fullAmount: val,
+          divisor: div,
+          note: div === 12 ? 'Jahresbeitrag / 12' : `Vierteljährlich / ${div}`
+        };
+        setState((prev) => ({
+          ...prev,
+          config: {
+            ...prev.config,
+            sinkingFunds: [...(prev.config.sinkingFunds || []), newFund]
+          }
+        }));
+        setFundName('');
+        setFundAmount('');
+        setShowAddFund(false);
+        showNotification('Neue Rücklage hinzugefügt!');
+      };
+
+      const handleAddKaSubmit = (e) => {
+        e.preventDefault();
+        onAddKleinanzeigen({
+          title: kaTitle,
+          amount: kaAmount,
+          paidBy: kaPaidBy,
+          splitPercentA: 50
+        });
+        setKaTitle('');
+        setKaAmount('');
+      };
+
+      const removeFund = (id) => {
+        setState((prev) => ({
+          ...prev,
+          config: {
+            ...prev.config,
+            sinkingFunds: (prev.config.sinkingFunds || []).filter((f) => f.id !== id)
+          }
+        }));
+      };
+
+      return (
+        <div className="space-y-4">
+          {/* Header Card: Dauerübertrag auf Tagesgeld */}
+          <div className="rounded-3xl p-4 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-900 border border-indigo-500/30 text-white shadow-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center shrink-0">
+                  <Icon name="piggy-bank" size={19} />
+                </div>
+                <div>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-indigo-200">
+                    ING Tagesgeld Dauerübertrag
+                  </h2>
+                  <div className="text-2xl font-black font-mono text-white">
+                    {formatEUR(finance.sinkingMonthlyTotal)} / Monat
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowAddFund(!showAddFund)}
+                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold flex items-center gap-1 active:scale-95 transition"
+              >
+                <Icon name={showAddFund ? 'x' : 'plus'} size={15} />
+                <span>{showAddFund ? 'Schließen' : '+ Posten'}</span>
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-300">
+              Puffert Jahreskosten (Kfz-Vollkasko, GEZ vierteljährlich, Versicherungen; keine Kfz-Steuer da E-Auto).
+            </p>
+          </div>
+
+          {showAddFund && (
+            <form onSubmit={handleAddFundSubmit} className="bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-sm border border-slate-200/80 dark:border-slate-800 space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                Neuen Sinking Fund anlegen
+              </h3>
+              <input
+                type="text"
+                placeholder="Bezeichnung (z.B. Zahnzusatzversicherung)"
+                value={fundName}
+                onChange={(e) => setFundName(e.target.value)}
+                required
+                className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs"
+              />
+              <div className="grid grid-cols-2 gap-2.5">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Gesamtbetrag €"
+                  value={fundAmount}
+                  onChange={(e) => setFundAmount(e.target.value)}
+                  required
+                  className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono text-xs font-bold"
+                />
+                <select
+                  value={fundDivisor}
+                  onChange={(e) => setFundDivisor(e.target.value)}
+                  className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs"
+                >
+                  <option value="12">Jährlich (/ 12)</option>
+                  <option value="3">Vierteljährlich (/ 3)</option>
+                  <option value="6">Halbjährlich (/ 6)</option>
+                </select>
+              </div>
+              <button
+                type="submit"
+                className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
+              >
+                Rücklage speichern
+              </button>
+            </form>
+          )}
+
+          {/* Sinking Funds Liste */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-sm border border-slate-200/80 dark:border-slate-800 space-y-2.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Gebündelte Nicht-Monatskosten
+            </h3>
+            <div className="space-y-2">
+              {(state.config.sinkingFunds || []).map((f) => {
+                const monthly = (Number(f.fullAmount) || 0) / (Number(f.divisor) || 12);
+                return (
+                  <div
+                    key={f.id}
+                    className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 text-xs"
+                  >
+                    <div>
+                      <div className="font-bold text-slate-900 dark:text-white">{f.name}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                        {formatEUR(f.fullAmount)} ({f.note})
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                        {formatEUR(monthly)} / Mon.
+                      </span>
+                      <button
+                        onClick={() => removeFund(f.id)}
+                        className="p-1 text-slate-400 hover:text-rose-500"
+                      >
+                        <Icon name="trash" size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* KLEINANZEIGEN & BARKAUF VERRECHNER */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-sm border border-slate-200/80 dark:border-slate-800 space-y-3.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                  Kleinanzeigen- & Barkauf-Verrechner
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  50:50 Ausgleich für geteilte Bar-Auslagen
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Dein Saldo</span>
+                <span className={`font-mono font-extrabold text-sm ${
+                  finance.netBalanceForA > 0 ? 'text-emerald-500' :
+                  finance.netBalanceForA < 0 ? 'text-rose-500' : 'text-slate-400'
+                }`}>
+                  {finance.netBalanceForA > 0 ? `+${formatEUR(finance.netBalanceForA)} (B zahlt dir)` :
+                   finance.netBalanceForA < 0 ? `-${formatEUR(Math.abs(finance.netBalanceForA))} (Du zahlst B)` :
+                   '0,00 €'}
+                </span>
+              </div>
+            </div>
+
+            <form onSubmit={handleAddKaSubmit} className="grid grid-cols-12 gap-2 pt-1">
+              <input
+                type="text"
+                placeholder="Artikel (z.B. Wickeltisch)"
+                value={kaTitle}
+                onChange={(e) => setKaTitle(e.target.value)}
+                required
+                className="col-span-5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs"
+              />
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="€"
+                value={kaAmount}
+                onChange={(e) => setKaAmount(e.target.value)}
+                required
+                className="col-span-3 px-2 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono text-xs font-bold"
+              />
+              <select
+                value={kaPaidBy}
+                onChange={(e) => setKaPaidBy(e.target.value)}
+                className="col-span-2 px-1 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs"
+              >
+                <option value="A">Bar A</option>
+                <option value="B">Bar B</option>
+              </select>
+              <button
+                type="submit"
+                className="col-span-2 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center"
+              >
+                <Icon name="plus" size={15} />
+              </button>
+            </form>
+
+            <div className="space-y-1.5 pt-1">
+              {finance.openKleinanzeigen.map((ka) => (
+                <div
+                  key={ka.id}
+                  className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-xs"
+                >
+                  <div>
+                    <span className="font-medium text-slate-800 dark:text-slate-200">{ka.title}</span>
+                    <span className="text-[10px] text-slate-400 ml-2">Bezahlt von Partner {ka.paidBy}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold">{formatEUR(ka.amount)}</span>
+                    <button
+                      onClick={() => onDeleteKleinanzeigen(ka.id)}
+                      className="text-slate-400 hover:text-rose-500"
+                    >
+                      <Icon name="trash" size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {finance.openKleinanzeigen.length > 0 && (
+                <button
+                  onClick={onSettleAllKleinanzeigen}
+                  className="w-full mt-2 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition"
+                >
+                  ✓ Alle offenen Barkäufe als ausgeglichen markieren
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================================
+    // 9. SCREEN 4: EINSTELLUNGEN & DATEN-SICHERHEIT + PWA ZENTRALE
+    // ============================================================================
+    function SettingsScreen({
+      state,
+      setState,
+      finance,
+      selectedMonthKey,
+      isInstalledPwa,
+      deferredInstallPrompt,
+      onTriggerInstall,
+      onResetNewMonth,
+      showNotification
+    }) {
+      const fileInputRef = useRef(null);
+      const [newAboName, setNewAboName] = useState('');
+      const [newAboAmount, setNewAboAmount] = useState('');
+      const [confirmMonthReset, setConfirmMonthReset] = useState(false);
+      const [showPwaViewer, setShowPwaViewer] = useState(null);
+
+      const c = state.config;
+
+      const updateConfigField = (key, rawValue) => {
+        const val = parseDecimal(rawValue);
+        setState((prev) => ({
+          ...prev,
+          config: {
+            ...prev.config,
+            [key]: val
+          }
+        }));
+      };
+
+      const addPrivateAbo = (e) => {
+        e.preventDefault();
+        const val = parseDecimal(newAboAmount);
+        if (!newAboName || val <= 0) return;
+        setState((prev) => ({
+          ...prev,
+          config: {
+            ...prev.config,
+            privateAbos: [
+              ...(prev.config.privateAbos || []),
+              { id: 'abo-' + Date.now(), name: newAboName, amount: val }
+            ]
+          }
+        }));
+        setNewAboName('');
+        setNewAboAmount('');
+        showNotification('Privates Abonnement hinzugefügt!');
+      };
+
+      const removePrivateAbo = (id) => {
+        setState((prev) => ({
+          ...prev,
+          config: {
+            ...prev.config,
+            privateAbos: (prev.config.privateAbos || []).filter((a) => a.id !== id)
+          }
+        }));
+      };
+
+      const handleExportJSON = () => {
+        try {
+          const dataStr = JSON.stringify(state, null, 2);
+          const blob = new Blob([dataStr], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `flowpilot-backup-${getTodayISO()}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showNotification('JSON-Backup erfolgreich heruntergeladen!');
+        } catch (err) {
+          showNotification('Fehler beim Backup-Export', 'error');
+        }
+      };
+
+      const handleImportJSON = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const imported = JSON.parse(event.target.result);
+            if (imported && imported.config) {
+              setState(imported);
+              showNotification('Backup erfolgreich wiederhergestellt!');
+            } else {
+              showNotification('Ungültige Backup-Datei!', 'error');
+            }
+          } catch (err) {
+            showNotification('JSON konnte nicht gelesen werden!', 'error');
+          }
+        };
+        reader.readAsText(file);
+      };
+
+      const downloadTextFile = (filename, content, mimeType) => {
+        try {
+          const blob = new Blob([content], { type: mimeType });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showNotification(`${filename} erfolgreich heruntergeladen!`);
+        } catch (err) {
+          showNotification(`Fehler beim Speichern von ${filename}`, 'error');
+        }
+      };
+
+      const copyToClipboard = (text, label) => {
+        try {
+          const textArea = document.createElement('textarea');
+          textArea.value = text;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-999999px';
+          textArea.style.top = '-999999px';
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          showNotification(`${label} in die Zwischenablage kopiert!`);
+        } catch (err) {
+          showNotification('Kopieren fehlgeschlagen', 'error');
+        }
+      };
+
+      return (
+        <div className="space-y-4">
+          {/* PWA & OFFLINE ZENTRALE */}
+          <section className="rounded-3xl p-4 bg-gradient-to-br from-blue-950 via-slate-900 to-slate-900 border border-blue-800/40 text-white shadow-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-blue-800/40 text-blue-300 flex items-center justify-center shrink-0">
+                  <Icon name="smartphone" size={19} />
+                </div>
+                <div>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-white">
+                    PWA & Offline (Google Pixel)
+                  </h2>
+                  <p className="text-[11px] text-blue-200/80">
+                    Theme: <span className="font-mono text-white">#1e3a8a</span> • Standalone • Portrait
+                  </p>
+                </div>
+              </div>
+
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  isInstalledPwa
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : 'bg-blue-800/30 text-blue-200 border border-blue-700/30'
+                }`}
+              >
+                {isInstalledPwa ? '✓ Installiert' : 'PWA Ready'}
+              </span>
+            </div>
+
+            {deferredInstallPrompt && (
+              <button
+                onClick={onTriggerInstall}
+                className="w-full py-2.5 px-3 rounded-2xl bg-gradient-to-r from-blue-900 to-indigo-800 hover:from-blue-800 hover:to-indigo-700 active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition"
+              >
+                <Icon name="download" size={16} />
+                <span>Auf Google Pixel / Android Homescreen installieren</span>
+              </button>
+            )}
+
+            <div className="p-3 rounded-2xl bg-black/30 border border-white/10 space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-200">1. Service Worker (sw.js):</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setShowPwaViewer(showPwaViewer === 'sw' ? null : 'sw')}
+                    className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] text-slate-300"
+                  >
+                    {showPwaViewer === 'sw' ? 'Schließen' : 'Code anzeigen'}
+                  </button>
+                  <button
+                    onClick={() => downloadTextFile('sw.js', PWA_SERVICE_WORKER_CONTENT, 'application/javascript')}
+                    className="px-2.5 py-1 rounded-lg bg-blue-800 hover:bg-blue-700 text-[11px] font-bold text-white flex items-center gap-1"
+                  >
+                    <Icon name="download" size={12} />
+                    <span>sw.js</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-white/5 pt-2">
+                <span className="font-semibold text-slate-200">2. Manifest (manifest.json):</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setShowPwaViewer(showPwaViewer === 'manifest' ? null : 'manifest')}
+                    className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] text-slate-300"
+                  >
+                    {showPwaViewer === 'manifest' ? 'Schließen' : 'Code anzeigen'}
+                  </button>
+                  <button
+                    onClick={() => downloadTextFile('manifest.json', PWA_MANIFEST_CONTENT, 'application/json')}
+                    className="px-2.5 py-1 rounded-lg bg-blue-800 hover:bg-blue-700 text-[11px] font-bold text-white flex items-center gap-1"
+                  >
+                    <Icon name="download" size={12} />
+                    <span>manifest.json</span>
+                  </button>
+                </div>
+              </div>
+
+              {showPwaViewer && (
+                <div className="mt-3 pt-2 border-t border-white/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[11px] text-blue-300">
+                      {showPwaViewer === 'sw' ? 'sw.js (Cache-First Offline Worker)' : 'manifest.json (Standalone Android Manifest)'}
+                    </span>
+                    <button
+                      onClick={() =>
+                        copyToClipboard(
+                          showPwaViewer === 'sw' ? PWA_SERVICE_WORKER_CONTENT : PWA_MANIFEST_CONTENT,
+                          showPwaViewer === 'sw' ? 'sw.js' : 'manifest.json'
+                        )
+                      }
+                      className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold flex items-center gap-1"
+                    >
+                      <Icon name="copy" size={11} />
+                      <span>Kopieren</span>
+                    </button>
+                  </div>
+                  <pre className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[10px] text-slate-300 max-h-48 overflow-y-auto leading-relaxed whitespace-pre-wrap select-all">
+                    {showPwaViewer === 'sw' ? PWA_SERVICE_WORKER_CONTENT : PWA_MANIFEST_CONTENT}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* DATEN-SICHERHEIT & BACKUP */}
+          <section className="rounded-3xl p-4 bg-gradient-to-br from-slate-900 to-indigo-950 border border-indigo-500/30 text-white shadow-lg space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-2xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0">
+                <Icon name="shield" size={19} />
+              </div>
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-white">
+                  100% Lokaler Speicher & Datenschutz
+                </h2>
+                <p className="text-[11px] text-slate-300">
+                  Alle Daten liegen im <code className="text-indigo-300">localStorage</code> deines Handys.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 pt-1">
+              <button
+                onClick={handleExportJSON}
+                className="py-2.5 px-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition"
+              >
+                <Icon name="download" size={15} />
+                <span>JSON-Backup Export</span>
+              </button>
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="py-2.5 px-3 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-white font-bold text-xs border border-white/15 flex items-center justify-center gap-1.5 transition"
+              >
+                <Icon name="upload" size={15} />
+                <span>JSON-Import</span>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                onChange={handleImportJSON}
+                className="hidden"
+              />
+            </div>
+
+            <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+              <span className="text-[11px] text-slate-300">
+                Buchungen für {formatMonthLabel(selectedMonthKey)} leeren:
+              </span>
+              {!confirmMonthReset ? (
+                <button
+                  onClick={() => setConfirmMonthReset(true)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1"
+                >
+                  <Icon name="refresh" size={12} />
+                  <span>Monats-Reset</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      onResetNewMonth();
+                      setConfirmMonthReset(false);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-rose-600 text-white text-[11px] font-bold"
+                  >
+                    Jetzt leeren
+                  </button>
+                  <button
+                    onClick={() => setConfirmMonthReset(false)}
+                    className="px-2 py-1 rounded-lg bg-white/10 text-slate-300 text-[11px]"
+                  >
+                    Abbruch
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* GEMEINSCHAFTSKONTO */}
+          <section className="bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-sm border border-slate-200/80 dark:border-slate-800/90 space-y-3">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                1. Gemeinschaftskonto (ING) & Entlastungen
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Nach Abzug von Wohngeld & Kindergeld wird 50:50 geteilt ({formatEUR(finance.partnerAJointShare)} je Partner)
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <SettingNumberField
+                label="Warmmiete (Gesamt)"
+                value={c.warmmiete}
+                onChange={(v) => updateConfigField('warmmiete', v)}
+              />
+              <SettingNumberField
+                label="Wohngeld (Entlastung)"
+                value={c.wohngeld}
+                onChange={(v) => updateConfigField('wohngeld', v)}
+                highlight="emerald"
+              />
+              <SettingNumberField
+                label="Strom, Gas & Internet"
+                value={c.stromHeizungInternet}
+                onChange={(v) => updateConfigField('stromHeizungInternet', v)}
+              />
+              <SettingNumberField
+                label="Kindergeld (Baby 1:1)"
+                value={c.kindergeld}
+                onChange={(v) => updateConfigField('kindergeld', v)}
+                highlight="emerald"
+              />
+              <SettingNumberField
+                label="Sonstige Gem.-Fixkosten"
+                value={c.sonstigeGemeinschaftFix}
+                onChange={(v) => updateConfigField('sonstigeGemeinschaftFix', v)}
+              />
+              <div className="flex flex-col justify-end">
+                <label className="flex items-center gap-2 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 cursor-pointer text-xs">
+                  <input
+                    type="checkbox"
+                    checked={c.includeSinkingInJoint}
+                    onChange={(e) =>
+                      setState((prev) => ({
+                        ...prev,
+                        config: { ...prev.config, includeSinkingInJoint: e.target.checked }
+                      }))
+                    }
+                    className="rounded text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span className="text-[11px] font-medium leading-tight">
+                    Tagesgeld-Rate ({formatEUR(finance.sinkingMonthlyTotal)}) einbeziehen
+                  </span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          {/* BUDGETS */}
+          <section className="bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-sm border border-slate-200/80 dark:border-slate-800/90 space-y-3">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                2. Monatliche Alltags-Budgets (Gemeinschaft)
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Jederzeit frei konfigurierbare Budget-Limits
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <SettingNumberField
+                label="Supermarkt & Drogerie"
+                value={c.budgetSupermarkt}
+                onChange={(v) => updateConfigField('budgetSupermarkt', v)}
+              />
+              <SettingNumberField
+                label="Auswärts / Bestellen"
+                value={c.budgetAuswaerts}
+                onChange={(v) => updateConfigField('budgetAuswaerts', v)}
+              />
+              <SettingNumberField
+                label="E-Auto Sammelrechnung"
+                value={c.budgetEAuto}
+                onChange={(v) => updateConfigField('budgetEAuto', v)}
+              />
+              <SettingNumberField
+                label="Baby-Budget (Kindergeld)"
+                value={c.budgetBaby}
+                onChange={(v) => updateConfigField('budgetBaby', v)}
+              />
+            </div>
+          </section>
+
+          {/* PRIVATE PFLICHTAUSGABEN */}
+          <section className="bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-sm border border-slate-200/80 dark:border-slate-800/90 space-y-3">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                3. Partner A: Private Pflichtkosten & Basisgehalt
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Bestimmt zusammen mit dem 50% Anteil deinen dynamischen Schwellenwert
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <SettingNumberField
+                label="Erwartetes Gehalt am 15."
+                value={c.expectedSalary15th}
+                onChange={(v) => updateConfigField('expectedSalary15th', v)}
+                highlight="indigo"
+              />
+              <SettingNumberField
+                label="Auto-Rate an Partnerin"
+                value={c.rateAutoPartnerin}
+                onChange={(v) => updateConfigField('rateAutoPartnerin', v)}
+              />
+              <SettingNumberField
+                label="KfW-Kredit (Monatsrate)"
+                value={c.rateKfw}
+                onChange={(v) => updateConfigField('rateKfw', v)}
+              />
+              <SettingNumberField
+                label="Rate Kühlschrank"
+                value={c.rateKuehlschrank}
+                onChange={(v) => updateConfigField('rateKuehlschrank', v)}
+              />
+            </div>
+
+            {/* Abos */}
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Private Abonnements (z.B. YouTube Premium)
+                </span>
+                <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                  Σ {formatEUR(finance.privateAbosTotal)}
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                {(c.privateAbos || []).map((abo) => (
+                  <div
+                    key={abo.id}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 text-xs"
+                  >
+                    <span className="font-medium text-slate-800 dark:text-slate-200">{abo.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold">{formatEUR(abo.amount)}</span>
+                      <button
+                        onClick={() => removePrivateAbo(abo.id)}
+                        className="p-1 text-slate-400 hover:text-rose-500"
+                      >
+                        <Icon name="trash" size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <form onSubmit={addPrivateAbo} className="grid grid-cols-12 gap-2 pt-1">
+                <input
+                  type="text"
+                  placeholder="Neues Abo (z.B. Spotify)"
+                  value={newAboName}
+                  onChange={(e) => setNewAboName(e.target.value)}
+                  className="col-span-6 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300/80 dark:border-slate-700 text-xs"
+                />
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Betrag €"
+                  value={newAboAmount}
+                  onChange={(e) => setNewAboAmount(e.target.value)}
+                  className="col-span-4 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300/80 dark:border-slate-700 font-mono text-xs"
+                />
+                <button
+                  type="submit"
+                  className="col-span-2 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold flex items-center justify-center"
+                >
+                  <Icon name="plus" size={15} />
+                </button>
+              </form>
+            </div>
+          </section>
+        </div>
+      );
+    }
+
+    function SettingNumberField({ label, value, onChange, highlight }) {
+      const [localVal, setLocalVal] = useState(String(value));
+
+      useEffect(() => {
+        setLocalVal(String(value));
+      }, [value]);
+
+      const handleBlur = () => {
+        onChange(localVal);
+      };
+
+      const borderClass =
+        highlight === 'emerald'
+          ? 'border-emerald-500/40 bg-emerald-500/5'
+          : highlight === 'indigo'
+          ? 'border-indigo-500/40 bg-indigo-500/5'
+          : 'border-slate-300/80 dark:border-slate-700 bg-slate-100 dark:bg-slate-800';
+
+      return (
+        <div>
+          <label className="text-[10px] font-semibold uppercase text-slate-500 dark:text-slate-400 block mb-1 truncate">
+            {label}
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={localVal}
+              onChange={(e) => {
+                setLocalVal(e.target.value);
+                onChange(e.target.value);
+              }}
+              onBlur={handleBlur}
+              className={`w-full px-3 py-2 rounded-2xl border font-mono text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 ${borderClass}`}
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-mono">
+              €
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================================
+    // 10. QUICK MODAL (Tagesaktuelles Standard-Datum)
+    // ============================================================================
+    function QuickModal({ modalType, onClose, state, finance, selectedMonthKey, onAddTip, onAddExpense, onUpdateSalary }) {
+      const [amount, setAmount] = useState(
+        modalType === 'salary' ? String(finance.effectiveSalary15) : ''
+      );
+      const [date, setDate] = useState(() => getTodayISO());
+      const [note, setNote] = useState('');
+      const [category, setCategory] = useState('supermarkt');
+      const [paymentMethod, setPaymentMethod] = useState('Gemeinschaftskarte');
+      const [addToKleinanzeigen, setAddToKleinanzeigen] = useState(true);
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        const actionDate = date || getTodayISO();
+        if (modalType === 'tip') {
+          onAddTip(amount, actionDate, note || 'Schicht-Trinkgeld');
+        } else if (modalType === 'expense') {
+          onAddExpense({
+            amount,
+            category,
+            paymentMethod,
+            note,
+            date: actionDate,
+            addToKleinanzeigen: paymentMethod !== 'Gemeinschaftskarte' && addToKleinanzeigen
+          });
+        } else if (modalType === 'salary') {
+          onUpdateSalary(amount, true);
+        }
+        onClose();
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl p-5 border-t border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                {modalType === 'tip' && '💰 Schicht-Trinkgeld erfassen'}
+                {modalType === 'expense' && '🛒 Gemeinschaftsausgabe erfassen'}
+                {modalType === 'salary' && `🏦 Netto-Gehalt am 15. (${formatMonthLabel(selectedMonthKey)})`}
+              </h3>
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500"
+              >
+                <Icon name="x" size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              <div>
+                <label className="text-[11px] font-bold uppercase text-slate-400 block mb-1">
+                  Betrag in Euro
+                </label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  autoFocus
+                  placeholder="0,00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono text-2xl font-extrabold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {modalType === 'expense' && (
+                <>
+                  <div>
+                    <label className="text-[11px] font-bold uppercase text-slate-400 block mb-1.5">
+                      Budget-Kategorie (Gemeinschaft)
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: 'supermarkt', label: '🛒 Supermarkt & Drogerie' },
+                        { id: 'auswaerts', label: '🍕 Auswärts / Bestellen' },
+                        { id: 'eauto', label: '⚡ E-Auto Sammelrechnung' },
+                        { id: 'baby', label: '👶 Babybedarf (Kindergeld)' }
+                      ].map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setCategory(cat.id)}
+                          className={`p-2.5 rounded-2xl text-xs font-bold text-left border transition ${
+                            category === cat.id
+                              ? 'bg-indigo-600 text-white border-indigo-500 shadow'
+                              : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold uppercase text-slate-400 block mb-1.5">
+                      Zahlungsweg
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['Gemeinschaftskarte', 'Bar A', 'Bar B'].map((pm) => (
+                        <button
+                          key={pm}
+                          type="button"
+                          onClick={() => setPaymentMethod(pm)}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold border transition ${
+                            paymentMethod === pm
+                              ? 'bg-emerald-600 text-white border-emerald-500'
+                              : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          {pm}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {paymentMethod !== 'Gemeinschaftskarte' && (
+                    <label className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-300">
+                      <input
+                        type="checkbox"
+                        checked={addToKleinanzeigen}
+                        onChange={(e) => setAddToKleinanzeigen(e.target.checked)}
+                        className="rounded text-amber-600"
+                      />
+                      <span>Automatisch im 50:50 Barauslagen-Verrechner vormerken</span>
+                    </label>
+                  )}
+                </>
+              )}
+
+              {modalType !== 'salary' && (
+                <div className="grid grid-cols-12 gap-2">
+                  <div className="col-span-7">
+                    <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
+                      Notiz (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={modalType === 'tip' ? 'z.B. Spätschicht' : 'z.B. DM Einkauf'}
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs"
+                    />
+                  </div>
+                  <div className="col-span-5">
+                    <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
+                      Datum
+                    </label>
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="w-full px-2.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-bold text-sm shadow-lg shadow-indigo-600/25 transition"
+              >
+                Jetzt verbindlich speichern
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================================
+    // 11. NAVIGATION BUTTON HELPER
+    // ============================================================================
+    function NavButton({ active, onClick, icon, label, badge, badgeColor }) {
+      return (
+        <button
+          onClick={onClick}
+          className={`relative flex flex-col items-center justify-center py-2 rounded-2xl transition-all active:scale-95 ${
+            active
+              ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 font-semibold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium'
+          }`}
+        >
+          <div className="relative">
+            <Icon name={icon} size={20} />
+            {badge && (
+              <span
+                className={`absolute -top-1.5 -right-5 px-1.5 py-0.2 rounded-full text-[9px] font-bold leading-tight ${badgeColor}`}
+              >
+                {badge}
+              </span>
+            )}
+          </div>
+          <span className="text-[11px] mt-1 tracking-tight">{label}</span>
+        </button>
+      );
+    }
+
+    // React App Mount
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
