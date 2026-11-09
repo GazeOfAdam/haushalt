@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flowpilot-v1';
+const CACHE_NAME = 'flowpilot-v2';
 
 const ASSETS_TO_CACHE = [
   './',
@@ -12,7 +12,6 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      // Lädt Assets einzeln: Scheitert eine Datei, stürzt der Worker nicht ab
       for (const asset of ASSETS_TO_CACHE) {
         try {
           await cache.add(asset);
@@ -34,8 +33,14 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    }).then(() => clients.claim())
+    }).then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {
